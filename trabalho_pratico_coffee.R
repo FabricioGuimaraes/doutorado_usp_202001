@@ -1,184 +1,127 @@
+###Trabalho pratico para a disciplina analise de series temporais
+###Prof> Airlane Pereira Alencar
+###Aluno> Fabricio Guimaraes
+###Feito apenas com uma commodity, para avaliar como a serie temporal se comporta
+
 library(ggplot2)
 library(tseries)
 library(forecast)
 
-#library(fGarch)
-
-#ptax.csv
+#coffee.csv soybean.csv corn.csv
 #le os arquivos com os dados de forma decrescente
-cafe <- read.table("D:\\workspace\\coffee.csv", header=TRUE, row.names=NULL, sep = ",")
-soja <- read.table("D:\\workspace\\soybean.csv", header=TRUE, row.names=NULL, sep = ",")
-milho <- read.table("D:\\workspace\\corn.csv", header=TRUE, row.names=NULL, sep = ",")
+#soja <- read.table("D:\\workspace\\soybean.csv", header=TRUE, row.names=NULL, sep = ",")
+#milho <- read.table("D:\\workspace\\corn.csv", header=TRUE, row.names=NULL, sep = ",")
+commodity <- read.table("D:\\workspace\\coffee.csv", header=TRUE, row.names=NULL, sep = ",")
 ptax <- read.table("D:\\workspace\\ptax.csv", header=TRUE, row.names=NULL, sep = ",")
-#auto.arima(ptax$Value)
 
 #inverte a lista de dados, de forma ascendente 1900 - 2000. 
 #o arquivo csv esta no formato 2000 - 1900
-cafe <- cafe[seq(dim(cafe)[1],1),]
-soja <- soja[seq(dim(soja)[1],1),]
-milho <- milho[seq(dim(milho)[1],1),]
+commodity <- commodity[seq(dim(commodity)[1],1),]
 ptax <- ptax[seq(dim(ptax)[1],1),]
 
-#Quais colunas possuem nesta lista
-summary(cafe$Settle)
-summary(soja$Settle)
-summary(milho$Settle)
-summary(ptax$Value)
-par(mfrow=c(3,1))
-ccf(cafe$Settle, ptax$Value)
-ccf(soja$Settle, ptax$Value)
-ccf(milho$Settle, ptax$Value)
 
-#cafe.stl <- stl(ts(cafe$Settle, frequency = 252), s.window = "periodic")
+#Quais colunas possuem nesta lista
+summary(commodity$Settle)
+summary(ptax$Value)
+ccf(commodity$Settle, ptax$Value)
+
+commodity.stl <- stl(ts(commodity$Settle, frequency = 252), s.window = "periodic")
+plot(commodity.stl)
+ptax.stl <- stl(ts(ptax$Value, frequency = 250), s.window = "periodic")
+plot(ptax.stl)
+
 
 #Avalia se a serie e estacionaria, Analise da funcao de autocorrelação(ACF) e autocorrelação parcial(PACF)
 #Aqui o decaimento do parametro AC
-par(mfrow=c(2,2))
-acf(cafe$Settle)
-acf(soja$Settle)
-acf(milho$Settle)
-acf(ptax$Value)
+par(mfrow=c(2,1))
+acf(commodity$Settle)
+pacf(commodity$Settle)
 
-pacf(cafe$Settle)
-pacf(soja$Settle)
-pacf(milho$Settle)
+acf(ptax$Value)
 pacf(ptax$Value)
 
-Box.test(cafe$Settle, lag = 1, type = "Ljung-Box")
-Box.test(soja$Settle, lag = 1, type = "Ljung-Box")
-Box.test(milho$Settle, lag = 1, type = "Ljung-Box")
+Box.test(commodity$Settle, lag = 1, type = "Ljung-Box")
 Box.test(ptax$Value, lag = 1, type = "Ljung-Box")
 
-adf.test(cafe$Settle, alternative = "stationary")
-adf.test(soja$Settle, alternative = "stationary")
-adf.test(milho$Settle, alternative = "stationary")
+adf.test(commodity$Settle, alternative = "stationary")
 adf.test(ptax$Value, alternative = "stationary")
 
 
 #Faz uma (lag = 1) para a diferenciacao da serie
-cafe_Settle_diff <- diff(cafe$Settle, lag = 1, differences = 1)
-soja_Settle_diff <- diff(soja$Settle, lag = 1, differences = 1)
-milho_Settle_diff <- diff(milho$Settle, lag = 1, differences = 1)
+commodity_Settle_diff <- diff(commodity$Settle, lag = 1, differences = 1)
 ptax_Value_diff <- diff(ptax$Value, lag = 1, differences = 1)
 #vemos que pela funcao ACF, apos o primeiro lag, ha um decaimento exponencial, 
 #o que caracteriza a serie como estacionaria
 
-summary(cafe_Settle_diff)
-summary(soja_Settle_diff)
-summary(milho_Settle_diff)
+summary(commodity_Settle_diff)
 summary(ptax_Value_diff)
 
-acf(cafe_Settle_diff)
-acf(soja_Settle_diff)
-acf(milho_Settle_diff)
-acf(ptax_Value_diff)
+acf(commodity_Settle_diff)
+pacf(commodity_Settle_diff)
 
-pacf(cafe_Settle_diff)
-pacf(soja_Settle_diff)
-pacf(milho_Settle_diff)
+acf(ptax_Value_diff)
 pacf(ptax_Value_diff)
 
-Box.test(cafe_Settle_diff, lag = 1, type = "Ljung-Box")
-Box.test(soja_Settle_diff, lag = 1, type = "Ljung-Box")
-Box.test(milho_Settle_diff, lag = 1, type = "Ljung-Box")
+Box.test(commodity_Settle_diff, lag = 1, type = "Ljung-Box")
 Box.test(ptax_Value_diff, lag = 1, type = "Ljung-Box")
 
-adf.test(cafe_Settle_diff, alternative = "stationary")
-adf.test(soja_Settle_diff, alternative = "stationary")
-adf.test(milho_Settle_diff, alternative = "stationary")
+adf.test(commodity_Settle_diff, alternative = "stationary")
 adf.test(ptax_Value_diff, alternative = "stationary")
 
 #Visualizacao das series
-ts.plot(cafe$Settle)
-ts.plot(soja$Settle)
-ts.plot(milho$Settle)
+ts.plot(commodity$Settle)
 ts.plot(ptax$Value)
 
-ts.plot(cafe_Settle_diff)
-ts.plot(soja_Settle_diff)
-ts.plot(milho_Settle_diff)
+ts.plot(commodity_Settle_diff)
 ts.plot(ptax_Value_diff)
 
-#verifica qual melhores parametros para p, d, q (AR, Diferencas,MA)
-#ARIMA(0,1,0)
-auto.arima(cafe$Settle)
-#ARIMA(1,0,0)
-auto.arima(soja$Settle)
-#ARIMA(0,1,0)
-auto.arima(milho$Settle)
-#ARIMA(0,1,0) with drift 
+#verifica qual melhores parametros para p, d, q (AR, qte diff,MA).
+#Parametros>> stepwise = FALSE, approximation = FALSE, seasonal = FALSE
+#sem>> coffee ARIMA(0,1,0) soybean ARIMA(1,0,0) corn ARIMA(0,1,0) ptax ARIMA(0,1,0) with drift
+#com >> coffee ARIMA(2,1,2) soybean ARIMA(1,0,0) corn ARIMA(0,1,0) ptax ARIMA(0,1,0) with drift
+auto.arima(commodity$Settle, stepwise = FALSE, approximation = FALSE, seasonal = FALSE) # stepwise = FALSE, approximation = FALSE, seasonal = FALSE
+#ARIMA(0,1,0) with drift mesmo valor com ou sem parametros
 auto.arima(ptax$Value)
 
 
 ##FORECAST
-#http://www.face.ufg.br/siteface_files/midias/original-nt-002.pdf
-#https://rpubs.com/riazakhan94/arima_with_example
-#Model Estimation -> with the least AIC and significant co-efficients
-#evidence of AR(1)
-#Com o comando tsdiag é possível analisar os gráficos dos resíduos (O modelo deve
-#apresentar os resíduos estacionários, com média zero e variância constante)
-#coffee ARIMA(0,1,0)
-#soybean ARIMA(1,0,0)
-#corn ARIMA(0,1,0)
-#ptax ARIMA(0,1,0) with drift
-#cafe
-fit_cafe = arima(cafe$Settle, order=c(0,1,0))
-fit_cafe_residual = residuals(fit_cafe)
-fit_soja = arima(soja$Settle, order=c(1,0,0))
-fit_soja_residual = residuals(fit_soja)
-fit_milho = arima(milho$Settle, order=c(0,1,0))
-fit_milho_residual = residuals(fit_milho)
+#criacao dos modelos arima de acordo com os melhores parametros
+#encontrados atraves da funcao auto.arima()
+fit_commodity = arima(commodity$Settle, order=c(2,1,2))
+fit_commodity_residual = residuals(fit_commodity)
 fit_ptax = arima(ptax$Value, order=c(0,1,0))
 fit_ptax_residual = residuals(fit_ptax)
 
-#Avalia a estacionariedade dos residuos. O modelo apresenta residos estacionários
-acf(fit_cafe_residual)
-acf(fit_soja_residual)
-acf(fit_milho_residual)
-acf(fit_ptax_residual)
+plot(fit_commodity_residual)
+plot(fit_ptax_residual)
 
-pacf(fit_cafe_residual)
-pacf(fit_soja_residual)
-pacf(fit_milho_residual)
+#Avalia a estacionariedade dos residuos. O modelo apresenta residos estacionários
+acf(fit_commodity_residual)
+pacf(fit_commodity_residual)
+
+acf(fit_ptax_residual)
 pacf(fit_ptax_residual)
 
-Box.test(fit_cafe_residual, lag= 7, type = "Ljung-Box")
-Box.test(fit_soja_residual, lag= 7, type = "Ljung-Box")
-Box.test(fit_milho_residual, lag= 7, type = "Ljung-Box")
+Box.test(fit_commodity_residual, lag= 7, type = "Ljung-Box")
 Box.test(fit_ptax_residual, lag= 7, type = "Ljung-Box")
 
-adf.test(fit_cafe_residual, alternative = "stationary")
-adf.test(fit_soja_residual, alternative = "stationary")
-adf.test(fit_milho_residual, alternative = "stationary")
+adf.test(fit_commodity_residual, alternative = "stationary")
 adf.test(fit_ptax_residual, alternative = "stationary")
 
 #diagnosis
-tsdiag(fit_cafe)
-tsdiag(fit_soja)
-tsdiag(fit_milho)
+tsdiag(fit_commodity)
 tsdiag(fit_ptax)
 
+
 #FORECAST
-cafe_forecast = forecast(fit_cafe, h = 10)
-plot(cafe_forecast)
-lines(fitted(fit_cafe),col="blue")
-accuracy(cafe_forecast, cafe[1:10, 5])
-#Validar os residuos 
-checkresiduals(fit_cafe)
+par(mfrow=c(1,1))
 
-soja_forecast = forecast(fit_soja, h = 10)
-plot(soja_forecast)
-lines(fitted(fit_soja),col="blue")
-accuracy(soja_forecast, soja[1:10, 5])
+commodity_forecast = forecast(fit_commodity, h = 10)
+plot(commodity_forecast)
+lines(fitted(fit_commodity),col="blue")
+accuracy(commodity_forecast, commodity[1:10, 5])
 #Validar os residuos 
-checkresiduals(fit_soja)
-
-milho_forecast = forecast(fit_milho, h = 10)
-plot(milho_forecast)
-lines(fitted(fit_milho),col="blue")
-accuracy(milho_forecast, milho[1:10, 5])
-#Validar os residuos 
-checkresiduals(fit_milho)
+checkresiduals(commodity_forecast)
 
 #FORECAST
 ptax_forecast = forecast(fit_ptax, h = 10)
@@ -186,42 +129,102 @@ plot(ptax_forecast)
 lines(fitted(fit_ptax),col="blue")
 accuracy(ptax_forecast, ptax[1:10, 1])
 #Validar os residuos 
-checkresiduals(fit_ptax)
+checkresiduals(ptax_forecast)
 
 
 
 ###################
-#predict 
-predicted <- predict(fit_cafe, n.ahead=10)
-lines(predicted$pred,col='blue')
+#predict
+predicted_commodity <- predict(fit_commodity, n.ahead=10)
+accuracy(predicted_commodity$pred, commodity[1:10, 5])
+plot(predicted_commodity$pred, col='blue')
 #Para considerar um intervalo de conficanca de 95% , usamos dois desvio-padrao (+/- 2)
-lines(predicted$pred+2*predicted$se,col='blue',lty=5)
-lines(predicted$pred-2*predicted$se,col='blue',lty=5)
-autoplot(predicted$pred)
+lines(predicted_commodity$pred+2*predicted_commodity$se,col='green',lty=5)
+lines(predicted_commodity$pred-2*predicted_commodity$se,col='red',lty=5)
+
+predicted_ptax <- predict(fit_ptax, n.ahead=10)
+accuracy(predicted_ptax$pred, ptax[1:10, 1])
+#Para considerar um intervalo de conficanca de 95% , usamos dois desvio-padrao (+/- 2)
+plot(predicted_ptax$pred, col='blue')
+lines(predicted_ptax$pred+2*predicted_ptax$se,col='green',lty=5)
+lines(predicted_ptax$pred-2*predicted_ptax$se,col='red',lty=5)
 #predict
 
 
-#NAIVE
-?naive
-previsao_naive = naive(cafe$Settle)
-autoplot(previsao_naive)
-#autoplot(residuals(previsao_naive))
-checkresiduals(previsao_naive)
-summary(previsao_naive)
+#NAIVE ?naive
+previsao_naive_commodity = naive(commodity$Settle)
+plot(previsao_naive_commodity) #autoplot(previsao_naive_cafe)
+checkresiduals(previsao_naive_commodity)
+summary(previsao_naive_commodity)
+
+previsao_naive_ptax = naive(ptax$Value)
+plot(previsao_naive_ptax)
+#checkresiduals(previsao_naive_ptax)
+summary(previsao_naive_ptax)
 #NAIVE
 
-#SES
-?ses
-previsao_ses = ses(cafe$Settle, h = 10) # Previsao para os próximos 5 tempos
-autoplot(previsao_ses)
-checkresiduals(previsao_ses)
-summary(previsao_ses)
+#SES ?ses
+#simple exponencial smothing, data with no clean trend or seasonal
+previsao_ses_commodity = ses(commodity$Settle, h = 10) # Previsao para os próximos 10 tempos
+plot(previsao_ses_commodity)
+checkresiduals(previsao_ses_commodity)
+summary(previsao_ses_commodity)
+
+previsao_ses_ptax = ses(ptax$Value, h = 10) # Previsao para os próximos 10 tempos
+plot(previsao_ses_ptax)
+checkresiduals(previsao_ses_ptax)
+summary(previsao_ses_ptax)
 #SES
 
+#HOLT ?holt
+previsao_holt_commodity = holt(commodity$Settle, h = 10, damped=TRUE)
+plot(previsao_holt_commodity)
+checkresiduals(previsao_holt_commodity)
+summary(previsao_holt_commodity)
+
+previsao_holt_ptax = holt(ptax$Value, h = 10)
+plot(previsao_holt_ptax)
+checkresiduals(previsao_holt_ptax)
+summary(previsao_holt_ptax)
 #HOLT
-?holt
-previsao_holt = holt(cafe$Settle, h = 10)
-autoplot(previsao_holt)
-checkresiduals(previsao_holt)
-summary(previsao_holt)
-#HOLT
+
+
+
+#######################################################################################
+#########Testes que ainda nao ficaram legal ainda
+#####GetDFPData para buscar informacoes sobre as empresas. Estou tentando montar uma carteira Markowitz
+#####com informacoes de fundos de investimento. Por exemplo, separar por tipo de fundo
+#####cambial, multimercado, renda fixa, acoes
+
+# library(GetDFPData)
+# gdfpd.get.info.companies(type.data = "b2wdigital")
+# 
+# my.companies <- c("B2W - COMPANHIA DIGITAL") 
+# first.date  <- "2010-01-01"
+# last.date   <- "2020-05-26"
+# type.export <- "csv"
+
+# get data using gdfpd.GetDFPData
+# This can take a while since the local data is not yet cached..
+# df.reports <- gdfpd.GetDFPData(name.companies = my.companies, 
+#                                first.date = first.date, 
+#                                last.date  = last.date)
+# 
+# gdfpd.export.DFP.data(df.reports = df.reports, type.export = type.export)
+
+
+#########Tentativa de uso da library urca
+# library(urca)
+# x <- ur.df(cafe$Settle)
+# y <- ur.df(cafe_Settle_diff)
+
+#########Tentativa de uso da library pracma, para cruzamento de medias moveis
+#install.packages('pracma')
+# library(pracma)
+# moving.avg <- ts(movavg(cafe$Settle, n=5, type="s"))
+# plot(moving.avg)
+
+#########Tentativa de uso da funcao decompose, porem utilizei a stl()
+# cafe.decomp <- decompose(cafe$Settle)
+
+
